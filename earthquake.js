@@ -1,55 +1,71 @@
 const map = new maplibregl.Map({
     container: 'map', // container id
-    center: [21, 44], // starting position [lng, lat]
-    zoom: 6.5, // starting zoom
-    style: "https://demotiles.maplibre.org/style.json"
+    center: [138, 38], // starting position [lng, lat]
+    zoom: 5.5, // starting zoom
+    style: {
+        "version": 8,
+        "sources": {
+            "satellite": {
+                "type": "raster",
+                "tiles": ["https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg"],
+                "tileSize": 256
+            }
+        },
+        "layers": [{
+            "id": "satellite",
+            "type": "raster",
+            "source": "satellite"
+        }]
+    }
 });
 async function geojsonFetch() {
-    let response, brutalistBuildings, serbia, table;
-    response = await fetch('assets/brutalistBuildings.geojson');
-    brutalistBuildings = await response.json();
-    response = await fetch('assets/serbia.geojson');
-    serbia = await response.json();
+    let response, earthquakes, japan, table;
+    response = await fetch('assets/earthquakes.geojson');
+    earthquakes = await response.json();
+    response = await fetch('assets/japan.json');
+    japan = await response.json();
     map.on('load', function loadingData() {
-        map.addSource('brutalistBuildings', {
+        map.addSource('japan', {
             type: 'geojson',
-            data: brutalistBuildings
-        });
-        console.log(brutalistBuildings);
-        map.addLayer({
-            'id': 'buildings-layer',
-            'type': 'circle',
-            'source': 'brutalistBuildings',
-            'paint': {
-                'circle-radius': 8,
-                'circle-stroke-width': 2,
-                'circle-color': 'white',
-                'circle-stroke-color': 'white'
-            }
-        });
-        map.addSource('serbia', {
-            type: 'geojson',
-            data: serbia
+            data: japan
         });
         map.addLayer({
-            'id': 'serbia-layer',
+            'id': 'japan-layer',
             'type': 'fill',
-            'source': 'serbia',
+            'source': 'japan',
             'paint': {
                 'fill-color': '#0080ff', // blue color fill
                 'fill-opacity': 0.5
             }
         });
+        map.addSource('earthquakes', {
+            type: 'geojson',
+            data: earthquakes
+        });
+        map.addLayer({
+            'id': 'earthquakes-layer',
+            'type': 'circle',
+            'source': 'earthquakes',
+            'paint': {
+                'circle-radius': 8,
+                'circle-stroke-width': 2,
+                'circle-color': 'red',
+                'circle-stroke-color': 'white'
+            }
+        });
     });
     table = document.getElementsByTagName("table")[0];
     let row, cell1, cell2, cell3;
-    for (let i = 0; i < brutalistBuildings.features.length; i++) {
+    for (let i = 0; i < earthquakes.features.length; i++) {
         // Create an empty <tr> element and add it to the 1st position of the table:
         row = table.insertRow(-1);
         cell1 = row.insertCell(0);
         cell2 = row.insertCell(1);
-        cell1.innerHTML = brutalistBuildings.features[i].properties.name;
-        cell2.innerHTML = brutalistBuildings.features[i].properties.stories;
+        cell3 = row.insertCell(2);
+        cell1.innerHTML = earthquakes.features[i].properties.id;
+        cell2.innerHTML = earthquakes.features[i].properties.mag;
+        cell3.innerHTML = new Date(earthquakes.features[i].properties.time).toLocaleDateString(
+            "en-US");
     }
 };
 
@@ -99,17 +115,3 @@ function sortTable(e) {
         }
     }
 }
-function checkWindowSize() {
-    const panel = document.getElementById('side-panel');
-    if (window.innerWidth < 1024) {
-        panel.style.display = 'none';
-    } else {
-        panel.style.display = 'block';
-    }
-}
-
-// Run on page load
-checkWindowSize();
-
-// Run on resize
-window.addEventListener('resize', checkWindowSize);
